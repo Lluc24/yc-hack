@@ -15,6 +15,11 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
     uv sync --locked --no-install-project --no-dev
 
-# Copy the application code
-COPY ./bot.py bot.py
-COPY ./mock_backend.py mock_backend.py
+# Copy the application code.
+# Pipecat Cloud runs bot.py as the entry point, so the ClearPath intake bot is
+# copied in as bot.py along with all of its helper modules.
+COPY ./bot-intake.py bot.py
+COPY ./intake_fields.py intake_fields.py
+COPY ./nemotron_llm.py nemotron_llm.py
+COPY ./nvidia_stt.py nvidia_stt.py
+COPY ./number_utils.py number_utils.py

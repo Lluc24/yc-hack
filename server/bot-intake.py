@@ -337,6 +337,30 @@ async def bot(runner_args: RunnerArguments) -> None:
     else:
         krisp_filter = None
 
+    # Pipecat Cloud (and Cekura's pipecat_v2 runner) start the session as a Daily
+    # room, so the bot is invoked with DailySessionArguments — handle it before
+    # the local SmallWebRTC / Twilio cases below.
+    try:
+        from pipecatcloud.agent import DailySessionArguments
+    except ImportError:
+        DailySessionArguments = None
+
+    if DailySessionArguments is not None and isinstance(runner_args, DailySessionArguments):
+        from pipecat.transports.daily.transport import DailyParams, DailyTransport
+
+        transport = DailyTransport(
+            runner_args.room_url,
+            runner_args.token,
+            "ClearPath",
+            params=DailyParams(
+                audio_in_enabled=True,
+                audio_in_filter=krisp_filter,
+                audio_out_enabled=True,
+            ),
+        )
+        await run_bot(transport)
+        return
+
     match runner_args:
         case SmallWebRTCRunnerArguments():
             webrtc_connection: SmallWebRTCConnection = runner_args.webrtc_connection
