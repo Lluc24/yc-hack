@@ -2,8 +2,8 @@
 
 export const INTAKE_FIELDS = [
   { id: "patient-name",           label: "Full Legal Name",         type: "text",     section: "personal"    },
-  { id: "date-of-birth",          label: "Date of Birth",           type: "date",     section: "personal"    },
-  { id: "phone-number",           label: "Phone Number",            type: "tel",      section: "personal"    },
+  { id: "date-of-birth",          label: "Date of Birth",           type: "text",     section: "personal"    },
+  { id: "phone-number",           label: "Phone Number",            type: "text",     section: "personal"    },
   { id: "reason-for-visit",       label: "Reason for Visit",        type: "textarea", section: "visit"       },
   { id: "medical-conditions",     label: "Existing Conditions",     type: "textarea", section: "visit"       },
   { id: "current-medications",    label: "Current Medications",     type: "textarea", section: "medications" },
@@ -15,7 +15,7 @@ export const INTAKE_FIELDS = [
   { id: "group-number",           label: "Group Number",            type: "text",     section: "insurance"   },
   { id: "emergency-name",         label: "Emergency Contact Name",  type: "text",     section: "emergency"   },
   { id: "emergency-relationship", label: "Relationship",            type: "text",     section: "emergency"   },
-  { id: "emergency-phone",        label: "Emergency Phone",         type: "tel",      section: "emergency"   },
+  { id: "emergency-phone",        label: "Emergency Phone",         type: "text",     section: "emergency"   },
 ] as const;
 
 export type FieldId = typeof INTAKE_FIELDS[number]["id"];

@@ -15,7 +15,7 @@ export default function App() {
     new PipecatClient({
       transport: new SmallWebRTCTransport({
         // connectionUrl is the deprecated but simpler option — works for local dev
-        connectionUrl: "http://localhost:7860",
+        connectionUrl: "http://localhost:7860/api/offer",
       }),
     })
   );

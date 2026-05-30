@@ -6,64 +6,6 @@ import {
   PipecatClientAudio,
 } from "@pipecat-ai/client-react";
 
-// ── Dev test panel ─────────────────────────────────────────────────────────────
-// Directly manipulates DOM to verify fields respond correctly — no bot needed.
-// Hidden automatically in production builds.
-function DevTestPanel() {
-  const fillField = (id: string, value: string) => {
-    const el = document.getElementById(id) as HTMLInputElement | HTMLTextAreaElement | null;
-    if (!el) return;
-    const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
-      window.HTMLInputElement.prototype, "value"
-    )?.set ?? Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, "value")?.set;
-    nativeInputValueSetter?.call(el, value);
-    el.dispatchEvent(new Event("input", { bubbles: true }));
-    el.dispatchEvent(new Event("change", { bubbles: true }));
-  };
-
-  const highlightField = (id: string) => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.classList.add("ring-4", "ring-yellow-400");
-    setTimeout(() => el.classList.remove("ring-4", "ring-yellow-400"), 1200);
-    el.scrollIntoView({ behavior: "smooth", block: "center" });
-  };
-
-  return (
-    <div className="mt-3 p-3 bg-yellow-50 border border-yellow-300 rounded-lg text-xs">
-      <div className="font-semibold text-yellow-800 mb-2">
-        Dev — Test form fills (no bot needed)
-      </div>
-      <div className="flex flex-wrap gap-2">
-        <button onClick={() => fillField("patient-name", "Sarah Johnson")}
-          className="px-2 py-1 bg-yellow-200 hover:bg-yellow-300 rounded transition-colors">
-          Fill Name
-        </button>
-        <button onClick={() => fillField("date-of-birth", "1985-03-15")}
-          className="px-2 py-1 bg-yellow-200 hover:bg-yellow-300 rounded transition-colors">
-          Fill DOB
-        </button>
-        <button onClick={() => fillField("allergies", "Penicillin, sulfa drugs")}
-          className="px-2 py-1 bg-yellow-200 hover:bg-yellow-300 rounded transition-colors">
-          Fill Allergies
-        </button>
-        <button onClick={() => fillField("insurance-provider", "BlueCross BlueShield")}
-          className="px-2 py-1 bg-yellow-200 hover:bg-yellow-300 rounded transition-colors">
-          Fill Insurance
-        </button>
-        <button onClick={() => highlightField("patient-name")}
-          className="px-2 py-1 bg-orange-200 hover:bg-orange-300 rounded transition-colors">
-          Highlight Name
-        </button>
-        <button onClick={() => document.getElementById("emergency-name")?.scrollIntoView({ behavior: "smooth", block: "center" })}
-          className="px-2 py-1 bg-orange-200 hover:bg-orange-300 rounded transition-colors">
-          Scroll to Emergency
-        </button>
-      </div>
-    </div>
-  );
-}
-
 // ── Main voice panel ──────────────────────────────────────────────────────────
 export function VoicePanel() {
   const client = usePipecatClient();
@@ -177,8 +119,6 @@ export function VoicePanel() {
         )}
 
         <PipecatClientAudio />
-
-        {import.meta.env.DEV && <DevTestPanel />}
       </div>
     </div>
   );
