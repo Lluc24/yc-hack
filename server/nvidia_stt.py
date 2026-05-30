@@ -27,6 +27,7 @@ from pipecat.frames.frames import (
     VADUserStoppedSpeakingFrame,
 )
 from pipecat.processors.frame_processor import FrameDirection
+from pipecat.audio.utils import create_stream_resampler
 from pipecat.services.settings import STTSettings
 from pipecat.services.stt_service import WebsocketSTTService
 from pipecat.utils.time import time_now_iso8601
@@ -142,6 +143,11 @@ class NVidiaWebSocketSTTService(WebsocketSTTService):
         # cleared once the matching final transcript arrives.
         self._waiting_for_final: bool = False
 
+        # The NVIDIA ASR server expects 16 kHz PCM. Telephony transports (Twilio)
+        # deliver 8 kHz, so resample incoming audio up to self.sample_rate before
+        # forwarding. No-op when the input is already at the target rate (WebRTC).
+        self._input_resampler = create_stream_resampler()
+
     def can_generate_metrics(self) -> bool:
         """Check if this service can generate processing metrics."""
         return True
@@ -255,11 +261,20 @@ class NVidiaWebSocketSTTService(WebsocketSTTService):
             )
             return
 
+        # Resample to the rate the ASR server expects (16 kHz). On the phone
+        # path frames arrive at 8 kHz (Twilio); without this the server gets
+        # half-speed audio and returns no transcript. No-op when already 16 kHz.
+        audio_bytes = frame.audio
+        if frame.sample_rate != self.sample_rate:
+            audio_bytes = await self._input_resampler.resample(
+                frame.audio, frame.sample_rate, self.sample_rate
+            )
+
         if self._user_speaking:
-            await self.process_generator(self.run_stt(frame.audio))
+            await self.process_generator(self.run_stt(audio_bytes))
             return
 
-        self._audio_ring += frame.audio
+        self._audio_ring += audio_bytes
         if self._preroll_bytes > 0 and len(self._audio_ring) > self._preroll_bytes:
             del self._audio_ring[: -self._preroll_bytes]
 

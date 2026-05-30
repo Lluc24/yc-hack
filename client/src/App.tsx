@@ -6,10 +6,16 @@ import { motion, AnimatePresence } from "framer-motion";
 import { IntakeForm } from "./IntakeForm";
 import { VoicePanel } from "./VoicePanel";
 import { OnboardingExperience } from "./OnboardingExperience";
+import { Results } from "./Results";
 import "./index.css";
 
 export default function App() {
   const [onboardingDone, setOnboardingDone] = useState(false);
+
+  // Staff dashboard at /results — no voice client, no onboarding.
+  if (window.location.pathname === "/results") {
+    return <Results />;
+  }
 
   const clientRef = useRef(
     new PipecatClient({

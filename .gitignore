@@ -6,6 +6,9 @@ __pycache__/
 # C extensions
 *.so
 
+# ClearPath intake records (local demo data)
+intakes.json
+
 # Distribution / packaging
 .Python
 build/
