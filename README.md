@@ -1,238 +1,286 @@
-# YC Voice Agents Hackathon
+# ClearPath — a voice agent that fills medical intake forms
 
-Welcome to the YC Voice Agents Hackathon, hosted by [Cekura](https://cekura.com) and [Daily](https://daily.co), in partnership with [NVIDIA](https://nvidia.com), [AWS](https://aws.amazon.com), and [Twilio](https://twilio.com).
+> Built at the YC Voice Agents Hackathon (Cekura × Daily/Pipecat, with NVIDIA, AWS, Twilio).
 
-The goal of this event is to learn about building, scaling, evaluating, and continuously improving voice agents.
+---
 
-## Schedule, rules, and prizes
+## 1. What is this?
 
-This is a one-day event. Please arrive by 8:30. We'll kick things off at 9:00.
+**ClearPath replaces the medical-intake clipboard with a conversation.**
 
-### Schedule
+A patient opens a web intake form (or calls a phone number) and just *talks*. As they
+speak, the form fills in **live on screen** — name, date of birth, medications, allergies,
+insurance, emergency contact — each field populating and highlighting in real time, read
+back for confirmation, and submitted when all required fields are captured.
 
-  - 8:00 AM – Doors open & registration
-  - 8:30 AM – Breakfast
-  - 9:00 AM – Welcome / Hackathon begins
-  - 12:00 PM – Lunch
-  - 6:00 PM – Submissions due
-  - 6:00 - 8:00 PM – Dinner, demos, and conversation
-  - 8:00 PM – Judges' presentations
-  - 9:00 PM – We all go home
+Two front-ends share **one** voice pipeline:
 
-### General guidance
+- **Web** — the voice agent drives a live React intake form using Pipecat 1.3.0's new
+  browser-control (UI Agent) protocol. The patient watches fields populate as they talk.
+- **Phone** — the same agent answers a Twilio call and completes the entire intake by
+  voice, for patients without a smartphone. No screen required.
 
-First of all, please respect the YC space. We very much appreciate YC hosting these events. Stay in the designated areas, clean up after meals, and in general be a good guest.
+Completed intakes (web **and** phone) land in a single staff dashboard.
 
-Build something new for this hackathon. Use the tools from Cekura to evaluate and improve the performance of what you build. Use Pipecat as the orchestration framework for your voice agent. We also encourage you to use the open source models from NVIDIA, but it's okay to use any models that work well for your project.
+**Why it matters:** US healthcare spends ~$250B/yr on administration, ~2 paperwork hours
+per patient-care hour, and ~40% of intake forms come back with errors. ClearPath turns a
+frustrating paper process into a ~90-second conversation that produces clean, structured data.
 
-There will be engineers from Cekura, Daily, NVIDIA, AWS, and Twilio available to help you with your project. Don't hesitate to find us.
-
-Judging will start at 6:00. In general, the judges want to showcase interesting projects rather than just pick winners. So don't worry too much about what the judges are looking for in a project. Build something that demonstrates creativity, is interesting on a technical level, or solves a real problem! But do keep in mind that the judges want to see great examples of using Cekura to improve voice agent performance, and using open source models from NVIDIA.
-
-
-# Tech stack and starting points.
-
-This repo contains two versions of a voice agent built with [Pipecat](https://pipecat.ai).
-
-The demo bot **Field & Flower** is a neighborhood flower shop: callers order a bouquet for delivery while the bot looks up the catalog, captures delivery details, and places the order. All backend calls are mocked, so the starter runs with nothing but AI service keys.
-
-## Version 1 — GPT-4.1
-
-You can start with this before the hackathon, if you want to. Or test GPT-4.1 and Nemotron side-by-side during the hackathon, using Cekura.
-
-This bot only requires a Gradium API key and an OpenAI API key. Sign up for free at [Gradium](https://gradium.ai). We'll provide a code for Gradium credits, during the event.
-
-- **STT:** [Gradium](https://gradium.ai)
-- **LLM:** [OpenAI Responses API](https://platform.openai.com/docs/api-reference/responses) (GPT-4.1)
-- **TTS:** [Gradium](https://gradium.ai)
-- **Transports:** SmallWebRTC (local dev) and [Twilio](https://www.twilio.com/en-us) (production telephony)
-- **Deploy target:** [Pipecat Cloud](https://pipecat.daily.co)
-
-## Version 2
-
-NVIDIA models hosted on AWS, available during the hackathon.
+### Pipeline
 
 ```
-  export NVIDIA_ASR_URL=ws://44.241.251.184:8080
-  export NEMOTRON_LLM_URL=http://nemotron-fleet-alb-1322439314.us-west-2.elb.amazonaws.com/v1
-  export NEMOTRON_LLM_MODEL=nvidia/nemotron-3-super
-  ```
-
-- **STT:** [Nemotron Speech Streaming](https://huggingface.co/nvidia/nemotron-speech-streaming-en-0.6b)
-- **LLM:** [Nemotron 3 Super 120B](https://huggingface.co/nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-BF16)
-- **TTS:** [Gradium](https://gradium.ai)
-- **Transports:** SmallWebRTC (local dev) and Twilio (production telephony)
-- **Deploy target:** [Pipecat Cloud](https://pipecat.daily.co)
-
-## Develop locally
-
-Get the bot running over WebRTC in your browser before you push to the cloud or wire up the phone, for a faster iteration loop.
-
-### Prerequisites
-
-- Python 3.11+
-- [`uv`](https://docs.astral.sh/uv/getting-started/installation/) package manager
-- API keys for [OpenAI](https://platform.openai.com) and [Gradium](https://gradium.ai)
-
-### Setup
-
-1. **Clone and enter the server directory:**
-
-   ```bash
-   git clone https://github.com/pipecat-ai/yc-voice-agents-hackathon.git
-   cd yc-voice-agents-hackathon/server
-   ```
-
-2. **Configure API keys:**
-
-   ```bash
-   cp .env.example .env
-   # Edit .env and fill in OPENAI_API_KEY, GRADIUM_API_KEY.
-   # TWILIO_* keys are only needed when you wire up the phone (next section).
-   ```
-
-3. **Install dependencies:**
-
-   ```bash
-   uv sync
-   ```
-
-4. **Run the bot:**
-
-   ```bash
-   # run one or the other of these
-   uv run bot-gpt.py
-   uv run bot-nemotron.py
-   ```
-
-   Open [http://localhost:7860](http://localhost:7860) and click **Connect** to start talking. First launch takes ~20s while Pipecat downloads VAD and turn-detection models.
-
-## Deploy to Pipecat Cloud
-
-Once the bot works locally, deploy to Pipecat Cloud and connect it to a Twilio phone number so anyone can call in.
-
-### Prerequisites
-
-1. [Sign up for Pipecat Cloud](https://pipecat.daily.co/sign-up)
-2. Install the [Pipecat CLI](https://github.com/pipecat-ai/pipecat-cli) and log in:
-
-   ```bash
-   uv tool install pipecat-ai-cli
-   pc cloud auth login
-   ```
-
-### Configure Twilio
-
-1. [Add credits / upgrade your Twilio account](https://twil.io/yc-hack)
-
-2. [Buy a phone number](https://help.twilio.com/articles/223135247) with voice capability.
-
-3. Get your Pipecat Cloud organization name:
-
-   ```bash
-   pc cloud organizations list
-   ```
-
-4. [Create a TwiML Bin](https://www.twilio.com/docs/serverless/twiml-bins/getting-started#create-a-new-twiml-bin) with this configuration:
-
-   ```xml
-   <?xml version="1.0" encoding="UTF-8"?>
-   <Response>
-     <Connect>
-       <Stream url="wss://api.pipecat.daily.co/ws/twilio">
-         <Parameter name="_pipecatCloudServiceHost"
-           value="flower-bot.YOUR_ORG_NAME"/>
-       </Stream>
-     </Connect>
-   </Response>
-   ```
-
-   Replace `YOUR_ORG_NAME` with the org name from step 2.
-
-5. [Attach the TwiML Bin](https://www.twilio.com/docs/serverless/twiml-bins/getting-started#wire-your-twiml-bin-up-to-an-incoming-phone-call) to your Twilio number: Go to [your phone numbers](https://console.twilio.com/go?to=/account/__account__/us1/senders-hub/list/phone-numbers/inventory) → select your
-number → under **Voice Configuration**, set method to the **TwiML Bin** you created → Save.
-
-6. [Optional] Use [Twilio Dev phone](https://www.twilio.com/docs/labs/dev-phone) for testing.
-
-### Review the deployment configuration
-
-Your deployment details are specified in the `pcc-deploy.toml` file. You can learn more about options in the [docs](https://docs.pipecat.ai/api-reference/cli/cloud/deploy#configuration-file-pcc-deploy-toml).
-
-### Upload secrets
-
-```bash
-pc cloud secrets set flower-bot-secrets --file .env
+Patient voice
+   │
+   ▼
+[ Browser WebRTC ]  ── or ──  [ Twilio phone call ]
+   │                               │
+   └───────────────┬───────────────┘
+                   ▼
+            Pipecat pipeline
+   ┌──────────────────────────────────────────────┐
+   │  NVIDIA Nemotron Speech Streaming STT   (ears) │
+   │  NVIDIA Nemotron-3-Super-120B LLM      (brain) │
+   │  Gradium TTS                           (voice) │
+   └──────────────────────────────────────────────┘
+                   │
+   ┌───────────────┴───────────────┐
+   ▼                               ▼
+fill_form_field()              record_field()
+→ RTVI UI commands             → stored server-side
+→ React form fills live        → REST API
+                   │
+                   ▼
+        Staff results dashboard (/results)
 ```
 
-This uploads everything from `.env` to Pipecat Cloud's secure storage. The bot reads from there at runtime, so you don't bake keys into the image.
+### Tech stack
 
-### Deploy
+| Layer | Choice |
+|------|--------|
+| Orchestration | **Pipecat 1.3.0** (incl. the new UI Agent / browser-control protocol) |
+| STT | **NVIDIA Nemotron Speech Streaming** (open weights) |
+| LLM | **NVIDIA Nemotron-3-Super-120B** (open weights) |
+| TTS | Gradium |
+| Telephony | Twilio (Media Streams → Pipecat) |
+| Web client | React + Vite + `@pipecat-ai/client-react` + `@pipecat-ai/small-webrtc-transport` |
+| Deploy | Pipecat Cloud (Daily transport) |
+| Eval / QA | **Cekura** (simulated callers + LLM-judge metrics) |
 
-Build and run your bot on Pipecat Cloud:
+---
 
-```bash
-pc cloud deploy
+## 2. Demo video (< 60 seconds)
+
+[![Medical Intake Form Demo](https://img.youtube.com/vi/ZxLRi5qF01Y/0.jpg)](https://youtu.be/ZxLRi5qF01Y)
+
+
+---
+
+## 3. How we used Cekura, Nemotron, and Pipecat
+
+### Pipecat (orchestration + browser control)
+
+Pipecat is the backbone. The interesting part is **Pipecat 1.3.0's UI Agent Protocol**:
+the server-side agent drives the patient's browser in real time.
+
+- The React form streams its accessibility tree to the server with `useUISnapshot()`.
+- The agent's `fill_form_field` tool pushes `RTVIUICommandFrame`s (`set_input_value`,
+  `scroll_to`, `highlight`) downstream; the RTVI observer relays them over WebRTC to the
+  browser's `useDefaultUICommandHandlers()`, which fills + flashes the field.
+- **No UIWorker subclass needed** — pushing UI command frames straight into the pipeline
+  and letting the auto-wired RTVI observer relay them turned out to be the clean path.
+
+The same pipeline runs over **three transports**: SmallWebRTC (local web), Daily (Pipecat
+Cloud), and Twilio WebSocket (phone) — selected at runtime from the runner arguments.
+
+### NVIDIA Nemotron (STT + LLM — both open weights)
+
+The entire "ears + brain" of the agent is Nemotron, hosted on AWS:
+
+- **Nemotron Speech Streaming** transcribes the patient over a WebSocket.
+- **Nemotron-3-Super-120B** decides which field each answer maps to, calls the
+  `fill_form_field` / `record_field` tool, and generates the spoken response — all under
+  real-time latency (we measured TTFB ~0.2s to the first answer token).
+
+Nemotron's tool-calling is what makes the live form-fill possible: every patient turn
+becomes a structured tool call with the right `field_id` and value.
+
+### Cekura (testing & evaluation) — the heart of the hackathon theme
+
+**What we were trying to accomplish:** prove the agent works under real conditions, not
+just a happy-path demo. We wanted automated, adversarial coverage of the failure modes that
+actually bite a medical intake bot: long member-ID numbers, spoken-date normalization,
+self-corrections, callers who don't have all their info, and adversarial/off-topic callers.
+
+**What we built in Cekura (entirely through the Cekura MCP in Claude Code):**
+- Registered the deployed Pipecat agent (`clearpath-intake`).
+- Authored **6 custom LLM-judge metrics**: field-capture accuracy, number normalization &
+  digit read-back, no cross-field number bleed, turn discipline, completion correctness,
+  and "stays on task / no prompt leakage."
+- Authored **6 simulated-caller scenarios** (happy path, multi-fact utterance, long member
+  ID with pauses, self-correction, unknown optional fields, adversarial caller), each
+  scored against all 6 metrics — plus Cekura's free predefined metrics (latency,
+  interruption, transcription accuracy, talk ratio).
+- Ran the suite against the **live deployed agent** over WebRTC.
+
+**How much it improved performance — the concrete story:** our **first Cekura run failed
+every scenario**, and the transcripts showed why: the agent produced **zero turns**. The
+cloud logs pinpointed it instantly —
+
+```
+ERROR | bot:bot:372 | Unsupported runner type:
+        <class 'pipecatcloud.agent.DailySessionArguments'>
 ```
 
-Learn more about [cloud builds](https://docs.pipecat.ai/pipecat-cloud/guides/cloud-builds).
+Our `bot()` only handled SmallWebRTC (local) and Twilio WebSocket — but **Pipecat Cloud
+starts sessions as a Daily room**, which we'd never exercised locally. The agent silently
+exited on every cloud session. We added a `DailySessionArguments` → `DailyTransport` path,
+added the `daily` dependency, redeployed, and re-ran — and the agent went from **0%
+(silent on every call)** to conducting full intake conversations end-to-end.
 
-### Call your bot
+That's the point of Cekura: a bug that was **invisible locally** (where everything worked)
+showed up the moment we tested the agent the way it's actually deployed. We would have
+demoed a broken cloud agent without it.
 
-Dial the Twilio number you set up. 🌷
+---
 
-## Test your agent with Cekura
+## 4. What we built **new** during the hackathon
 
-[Cekura](https://cekura.com) tests and observes voice agents. For this hackathon, use it to **test the Pipecat bot you build in this repo** — run real conversations against it, score the transcripts, and fix what's failing before you demo.
+We started from the Pipecat "Field & Flower" flower-shop starter in this repo. Essentially
+**everything below was built during the hackathon** — only the AI-service wrappers
+(`nemotron_llm.py`, `nvidia_stt.py`) and the project scaffold were borrowed from the starter.
 
-### Sign up
+**New backend (`server/`):**
+- `bot-intake.py` — the ClearPath web intake agent: 15-field flow, the `fill_form_field` /
+  `submit_form` tools that drive the browser via RTVI UI commands, and the system prompt.
+- `bot-intake-phone.py` — the Twilio phone-only intake agent (records by voice, no browser).
+- `intake_fields.py` — shared 15-field contract (mirrored on the client).
+- `number_utils.py` — spoken-number normalization we wrote from scratch:
+  "may second two thousand five" → `05/02/2005`, digit-by-digit ID/phone parsing, and a
+  `to_spoken()` helper so the agent reads numbers back digit-by-digit instead of as
+  "one hundred twenty-three thousand."
+- `intake_backend.py` — FastAPI store + REST API for completed intakes.
+- Multi-transport `bot()` (SmallWebRTC + Daily + Twilio) and Daily/Pipecat-Cloud deploy.
 
-Create your account at **[dashboard.cekura.ai](https://dashboard.cekura.ai)**. If you're approved for this hackathon, just sign up and your credits will show up automatically. If you don't see them, find someone from the Cekura team, they're on-site.
+**New frontend (`client/`):**
+- A React intake form styled like a real clinic portal, with a scroll-driven clipboard
+  onboarding animation.
+- The Pipecat client integration (`useUISnapshot`, `useDefaultUICommandHandlers`), live
+  transcript panel, and a `/results` staff dashboard (web + phone records, auto-refresh).
 
-### Onboarding (or skip it)
+**New eval suite:** the entire Cekura agent, 6 metrics, and 6 scenarios (see
+`CEKURA_SCENARIOS.md`, `CEKURA_SETUP.md`).
 
-On first login you'll land on a short setup flow that helps you create your first agent and test. Feel free to click through it — **or hit _Skip_** and jump straight to the dashboard if you'd rather set things up yourself. Either way takes a minute.
+**Bugs we found and fixed during the build (all new work):**
+- Nemotron streamed `<think>` reasoning tokens into spoken content even with thinking
+  disabled — we strip them at the chunk level in `nemotron_llm.py` (preserving inter-token
+  spaces, which a naive per-frame `.strip()` destroyed → "whatisyourname").
+- Twilio audio is 8 kHz but the NVIDIA ASR expects 16 kHz — phone STT returned *nothing*
+  until we added a resampler in `nvidia_stt.py`.
+- VAD `stop_secs` default (0.2s) cut patients off mid-number; raised to 1.0s so digit-group
+  pauses don't split a member ID across two fields.
+- The Pipecat-Cloud Daily-transport gap described above (found via Cekura).
 
-### Recommended: start by testing your agent (via Claude Code)
+---
 
-The fastest path — and what we recommend for the hackathon — is to drive Cekura from **Claude Code** using our MCP server + skills. You stay in your terminal, and Cekura handles agent creation, scenario generation, and running the test.
+## 5. Feedback on the tools
 
-**1. Install the Cekura skills + MCP** (Claude Code marketplace plugin — bundles the skills, slash commands, and auto-configured MCP server):
+### NVIDIA Nemotron
 
-```bash
-/plugin marketplace add cekura-ai/cekura-skills
-/plugin install cekura@cekura-skills
-```
+**What it did well**
+- **Fast.** TTFB to the first real answer token was ~0.2s in our runs — well within
+  real-time voice budget, even for a 120B model.
+- **Excellent structured tool-calling.** Mapping free-form patient speech to the correct
+  `field_id` + value, turn after turn, was rock-solid — this is what makes the live
+  form-fill work at all.
+- **Good instruction-following** on tight "one question per turn" constraints.
 
-Repo: [github.com/cekura-ai/cekura-skills](https://github.com/cekura-ai/cekura-skills) · Full setup + other agents (Cursor, Codex, etc.): **[docs.cekura.ai → Claude Code guide](https://docs.cekura.ai/mcp/claude-code-guide)** and **[Skills](https://docs.cekura.ai/mcp/skills)**.
-
-**2. Run an end-to-end test** of your agent with a single command:
-
-```
-/cekura-report
-```
-
-This spins up anything from 10–20 evaluators (what Cekura calls test cases), runs scenarios against your Pipecat agent, and gives you back a full report — transcripts, scores, and what failed — so you can iterate fast.
-
-> When connecting your agent, **select `Pipecat` as the provider.** Details: [docs.cekura.ai → Pipecat](https://docs.cekura.ai/documentation/integrations/pipecat/automated).
-
-## Learn more
-
-### Pipecat
-
-- [Pipecat Documentation](https://docs.pipecat.ai/)
-- [Pipecat Cloud Deployment](https://docs.pipecat.ai/pipecat-cloud/introduction)
-- [Pipecat Examples](https://github.com/pipecat-ai/pipecat-examples)
-- [Pipecat Discord](https://discord.gg/pipecat)
-
-### Twilio
-
-- [Twilio Developer Hub](https://www.twilio.com/en-us/developers)
-- [Twilio Documentation](https://www.twilio.com/docs)
-- [Twilio Dev phone](https://www.twilio.com/docs/labs/dev-phone)
+**What could be better**
+- **Thinking tokens leak into content.** With `chat_template_kwargs.enable_thinking=false`,
+  the served endpoint still emitted `<think>…</think>` (and stray `</think>`) inside the
+  spoken `content`, and exposed no separate `reasoning_content` field — so without a
+  reasoning parser on the vLLM side, chain-of-thought gets spoken aloud. We had to strip it
+  ourselves at the chunk level. A reliable on/off switch (or always routing reasoning to
+  `reasoning_content`) would remove a real footgun for voice.
+- **Digit strings.** The model tends to emit IDs/phone numbers as written digits that TTS
+  then reads as cardinals ("one hundred twenty-three thousand…"). Not strictly the model's
+  fault, but a nudge toward digit-by-digit rendering for ID-like fields would help voice use.
 
 ### Cekura
 
-- [Claude Code guide](https://docs.cekura.ai/mcp/claude-code-guide) — MCP + skills setup
-- [Cekura skills](https://docs.cekura.ai/mcp/skills) — all slash commands
-- [Pipecat integration](https://docs.cekura.ai/documentation/integrations/pipecat/automated)
-- [Cekura docs](https://docs.cekura.ai) · [dashboard](https://dashboard.cekura.ai)
+**What worked really well**
+- **It caught our most important bug.** The first run immediately surfaced that the
+  cloud-deployed agent was silent (Daily transport gap) — something local testing could
+  never have shown. That alone justified the tool.
+- **MCP-in-Claude-Code workflow is excellent.** Creating the agent, metrics, and scenarios
+  and launching live WebRTC runs entirely from the terminal, with transcripts + per-metric
+  explanations + recordings coming back, is a great loop.
+- **Free predefined metrics** (latency, interruption, transcription accuracy) layered on top
+  of our custom ones with zero extra work.
+
+**Bugs / friction we hit**
+- **API-key auth.** Two freshly generated dashboard API keys both returned
+  `401 Authentication failed` over the MCP (`X-CEKURA-API-KEY`); only OAuth
+  (`claude mcp add --transport http`) worked. Worth checking whether newly created keys are
+  active by default.
+- **MCP env-var substitution.** The plugin's bundled `.mcp.json` reads `${CEKURA_API_KEY}`,
+  but the running Claude Code process didn't pick up a freshly-set value across restarts in
+  our case — confusing to debug. OAuth sidesteps it; flagging for others.
+- **`metrics_create` schema.** `assistant_id` is documented as optional but the API rejects
+  a blank string (`"may not be blank"`) — you must omit the field entirely. Easy to trip on.
+- **Pipecat provider naming.** `assistant_provider` has no `pipecat` value; Pipecat is
+  selected via `transcript_provider: "pipecat"` + `pipecat_api_key` +
+  `pipecat_data.pipecat_agent_name`. The docs note it, but the enum mismatch is a stumble.
+
+**On self-improvement loops:** the diagnose → fix → redeploy → re-run loop genuinely worked
+for us (silent agent → working agent in one cycle). The thing that would make it *tighter*
+is a one-command "re-run this exact run after redeploy" and a built-in run-to-run diff so
+you can see a metric move from 0% → N% without eyeballing two reports.
+
+### Pipecat
+
+- **1.3.0 UI Agent Protocol is the star.** Driving a real web form from a server-side voice
+  agent, with the accessibility tree as the agent's "eyes," is genuinely novel and worked.
+- **Multi-transport is powerful but has sharp edges.** The same bot ran over SmallWebRTC,
+  Daily, and Twilio — but the **local vs. cloud transport mismatch** (SmallWebRTC locally,
+  `DailySessionArguments` on Pipecat Cloud) is an easy, silent footgun. A louder warning
+  when a bot has no handler for the transport it's actually invoked with would help.
+- **Packaging nit:** `SmallWebRTCTransport` lives in a separate npm package
+  (`@pipecat-ai/small-webrtc-transport`), and `client-react`'s bundled types import from a
+  bare `client-js` specifier — needed a `tsconfig` paths alias to resolve.
+
+---
+
+## Repo layout
+
+```
+server/
+  bot-intake.py          # web intake agent (drives the React form via RTVI UI commands)
+  bot-intake-phone.py    # Twilio phone intake agent (voice-only)
+  intake_fields.py       # shared 15-field contract
+  number_utils.py        # spoken date/number normalization + digit read-back
+  intake_backend.py      # FastAPI store + REST API for completed intakes
+  nemotron_llm.py        # Nemotron LLM service (+ <think>-token stripping)
+  nvidia_stt.py          # Nemotron STT service (+ 8kHz→16kHz resample for telephony)
+  PHONE_SETUP.md         # Twilio + ngrok runbook
+client/
+  src/IntakeForm.tsx     # clinic-styled intake form
+  src/VoicePanel.tsx     # Pipecat client + UI command handlers + live transcript
+  src/Results.tsx        # staff dashboard (web + phone records)
+AGENTS.md                # Cekura agent guide (fields, metrics, IDs)
+CEKURA_SCENARIOS.md      # 10 medical-intake test scenarios + metric definitions
+CEKURA_SETUP.md          # Cekura runbook (deploy → metrics → scenarios → run → report)
+```
+
+## Running it locally
+
+**Web flow** (3 terminals):
+```bash
+cd server && uv run uvicorn intake_backend:app --port 8000   # API
+cd server && ENV=local uv run bot-intake.py                  # web voice bot
+cd client && npm run dev                                     # frontend
+```
+Then: talk at http://localhost:5173 · results at http://localhost:5173/results
+
+**Phone flow:** see `server/PHONE_SETUP.md` (Twilio + ngrok).
+
+**Cekura eval:** see `CEKURA_SETUP.md`.
